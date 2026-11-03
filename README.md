@@ -1,7 +1,7 @@
 # ReceiptFlow<h1 align="center">🧾 ReceiptFlow</h1>
 
 <p align="center">
-  <a href="https://7v6kguzgphzuw.streamlit.app"><img src="https://img.shields.io/badge/Live_demo-password_protected-2ea44f?style=flat-square" alt="Live demo"></a>
+  <a href="https://receiptflow-fbur8ajc87v6kguzgphzuw.streamlit.app"><img src="https://img.shields.io/badge/Live_demo-password_protected-2ea44f?style=flat-square" alt="Live demo"></a>
   <img src="https://img.shields.io/badge/Python-3-blue?style=flat-square" alt="Python 3">
   <img src="https://img.shields.io/badge/Status-prototype-orange?style=flat-square" alt="Status: prototype">
 </p>
