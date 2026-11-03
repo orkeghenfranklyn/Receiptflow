@@ -20,14 +20,17 @@ confidence (0 to 1: how sure you are that everything is correct).
 If something is unreadable, use null. Never guess."""
 
 EMPTY = {"vendor": "", "date": "", "amount": None,
-         "currency": "", "category": "", "confidence": 0.0}LAST_ERRORS = []
+         "currency": "", "category": "", "confidence": 0.0}
+
+# Errors are collected here so the app can show them for debugging
+LAST_ERRORS = []
 
 
 def get_client(api_key=None):
     key = api_key or os.environ.get("GEMINI_API_KEY")
     if not key:
         raise RuntimeError("GEMINI_API_KEY is not set")
-    return genai.Client(api_key=key)
+    return genai.Client(api_key=str(key).strip())
 
 
 def ai_extract(image, client, tries_per_model=3):
@@ -47,7 +50,7 @@ def ai_extract(image, client, tries_per_model=3):
                 return out
             except Exception as e:
                 msg = str(e)
-                LAST_ERRORS.append(f"{model}: {msg[:300]}")
+                LAST_ERRORS.append(f"{model} (try {attempt + 1}): {msg[:300]}")
                 busy = "503" in msg or "429" in msg
                 if busy and attempt < tries_per_model - 1:
                     time.sleep(2 ** (attempt + 1))
