@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from PIL import Image, ImageOps
+import pipeline
 from pipeline import get_client, process_receipt
 
 st.set_page_config(page_title="ReceiptFlow", page_icon="🧾")
@@ -44,3 +45,6 @@ if st.session_state.rows:
     st.write(f"**{len(df) - n} OK, {n} need review.** Always check flagged rows by hand.")
     st.download_button("Download CSV", df.to_csv(index=False),
                        "receipts.csv", "text/csv")
+   if pipeline.LAST_ERRORS:
+      with st.expander("Technical errors (for debugging)"):
+        st.code("\n".join(pipeline.LAST_ERRORS[-6:]))
