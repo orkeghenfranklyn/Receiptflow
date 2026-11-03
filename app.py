@@ -12,7 +12,11 @@ st.caption("Demo only. Use sample receipts, not private ones. "
 # Optional password gate, so strangers can't use up the free AI quota
 password = st.secrets.get("APP_PASSWORD")
 if password:
-    if st.text_input("Password", type="password") != password:
+    entered = st.text_input("Password", type="password")
+    if not entered:
+        st.stop()
+    if entered != password:
+        st.error("Wrong password.")
         st.stop()
 
 if "rows" not in st.session_state:
@@ -40,11 +44,12 @@ if st.session_state.rows:
     cols = ["file", "vendor", "date", "amount", "currency",
             "category", "confidence", "status", "notes"]
     df = pd.DataFrame(st.session_state.rows)[cols]
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(df, width="stretch")
     n = (df["status"] == "Needs Review").sum()
     st.write(f"**{len(df) - n} OK, {n} need review.** Always check flagged rows by hand.")
     st.download_button("Download CSV", df.to_csv(index=False),
                        "receipts.csv", "text/csv")
-   if pipeline.LAST_ERRORS:
-      with st.expander("Technical errors (for debugging)"):
+
+if pipeline.LAST_ERRORS:
+    with st.expander("Technical errors (for debugging)"):
         st.code("\n".join(pipeline.LAST_ERRORS[-6:]))
