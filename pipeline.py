@@ -20,7 +20,7 @@ confidence (0 to 1: how sure you are that everything is correct).
 If something is unreadable, use null. Never guess."""
 
 EMPTY = {"vendor": "", "date": "", "amount": None,
-         "currency": "", "category": "", "confidence": 0.0}
+         "currency": "", "category": "", "confidence": 0.0}LAST_ERRORS = []
 
 
 def get_client(api_key=None):
@@ -47,6 +47,7 @@ def ai_extract(image, client, tries_per_model=3):
                 return out
             except Exception as e:
                 msg = str(e)
+                LAST_ERRORS.append(f"{model}: {msg[:300]}")
                 busy = "503" in msg or "429" in msg
                 if busy and attempt < tries_per_model - 1:
                     time.sleep(2 ** (attempt + 1))
