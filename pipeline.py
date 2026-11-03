@@ -5,11 +5,14 @@ from google.genai import types
 from PIL import Image
 
 # Model names retire often. Update this list if you see 404 errors.
-MODELS = ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite"]
+# Free-tier limits are per model, so more models = more capacity.
+MODELS = ["gemini-3.8-flash", "gemini-3.6-flash",
+          "gemini-3.5-flash", "gemini-3.1-flash-lite"]
 
 CONFIDENCE_THRESHOLD = 0.80
 MIN_SIDE = 400
 MAX_AGE_DAYS = 365
+MIN_GAP = 13  # seconds between AI calls (free tier: 5 per minute per model)
 REQUIRED = ["vendor", "date", "amount", "currency", "category"]
 
 PROMPT = """You read receipts. Return ONLY JSON with these keys:
@@ -24,6 +27,14 @@ EMPTY = {"vendor": "", "date": "", "amount": None,
 
 # Errors are collected here so the app can show them for debugging
 LAST_ERRORS = []
+_last_call = [0.0]
+
+
+def _pace():
+    wait = MIN_GAP - (time.time() - _last_call[0])
+    if wait > 0:
+        time.sleep(wait)
+    _last_call[0] = time.time()
 
 
 def get_client(api_key=None):
@@ -37,6 +48,7 @@ def ai_extract(image, client, tries_per_model=3):
     for model in MODELS:
         for attempt in range(tries_per_model):
             try:
+                _pace()
                 resp = client.models.generate_content(
                     model=model,
                     contents=[image, PROMPT],
@@ -51,9 +63,10 @@ def ai_extract(image, client, tries_per_model=3):
             except Exception as e:
                 msg = str(e)
                 LAST_ERRORS.append(f"{model} (try {attempt + 1}): {msg[:300]}")
-                busy = "503" in msg or "429" in msg
-                if busy and attempt < tries_per_model - 1:
-                    time.sleep(2 ** (attempt + 1))
+                if "429" in msg:
+                    break  # quota hit: go to the next model right away
+                if "503" in msg and attempt < tries_per_model - 1:
+                    time.sleep(2 ** (attempt + 1))  # busy server: wait, retry
                     continue
                 break
     return dict(EMPTY)  # all failed: becomes "Needs Review", never a fake OK
@@ -82,6 +95,9 @@ def validate(r, image=None):
 
 
 def is_duplicate(r, seen):
+    # Empty or unreadable receipts can't be compared, so never call them duplicates
+    if not r["vendor"] or not r["date"] or r["amount"] is None:
+        return False
     key = (str(r["vendor"]).lower(), r["date"], r["amount"])
     if key in seen:
         return True
